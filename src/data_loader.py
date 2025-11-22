@@ -26,6 +26,15 @@ class SODDataset(Dataset):
         mask = cv2.resize(mask, (128, 128))
         mask = mask.astype(np.float32) / 255.0
         mask = np.expand_dims(mask, axis=0)
+        import random
+
+        if random.random() > 0.5:  
+         img = np.fliplr(img).copy()
+        mask = np.fliplr(mask).copy()
+
+
+    factor = random.uniform(0.8, 1.2)
+    img = np.clip(img * factor, 0, 1)
 
         img = torch.from_numpy(img).permute(2, 0, 1)  
         mask = torch.from_numpy(mask)
