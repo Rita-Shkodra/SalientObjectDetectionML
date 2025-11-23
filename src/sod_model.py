@@ -20,9 +20,30 @@ class SODModel(nn.Module):
           nn.ReLU(inplace=True),
           nn.MaxPool2d(2)
         )
+        self.dec3 = nn.Sequential(
+            nn.ConvTranspose2d(128, 64, kernel_size=2, stride=2),
+            nn.ReLU(inplace=True)
+        )
+        self.dec2 = nn.Sequential(
+            nn.ConvTranspose2d(64, 32, kernel_size=2, stride=2),
+            nn.ReLU(inplace=True)
+        )
+        self.dec1 = nn.Sequential(
+            nn.ConvTranspose2d(32, 16, kernel_size=2, stride=2),
+            nn.ReLU(inplace=True)
+        )
+        
+      
+        self.out_conv = nn.Conv2d(16, 1, kernel_size=1)
+        self.sigmoid = nn.Sigmoid()
 
     def forward(self, x):
         x = self.enc1(x)
         x = self.enc2(x)
         x = self.enc3(x)
+        x = self.dec3(x)
+        x = self.dec2(x)
+        x = self.dec1(x)
+        x = self.out_conv(x)
+        x = self.sigmoid(x)
         return x
