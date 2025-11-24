@@ -71,3 +71,47 @@ def evaluate_model(model, test_loader, device):
         "IoU": avg[3]
     }
 
+def main():
+
+    device = "cuda" if torch.cuda.is_available() else "cpu"
+    print("Using:", device)
+
+  
+    _, _, test_loader = get_dataloaders(
+        "/content/drive/MyDrive/SOD_Data/processed/train",
+        "/content/drive/MyDrive/SOD_Data/processed/val",
+        "/content/drive/MyDrive/SOD_Data/processed/test",
+        batch_size=1
+    )
+
+    model = SODModel().to(device)
+    model.load_state_dict(torch.load("best_model.pth", map_location=device))
+    print("Loaded best_model.pth")
+
+  
+    results = evaluate_model(model, test_loader, device)
+    print("\n Test Set Performance:")
+    print(f" Precision: {results['precision']:.4f}")
+    print(f" Recall:    {results['recall']:.4f}")
+    print(f" F1-score:  {results['f1']:.4f}")
+    print(f" IoU:       {results['iou']:.4f}")
+
+   
+    print("\n🔍 Showing sample predictions...")
+    count = 3
+
+    with torch.no_grad():
+        for imgs, masks in test_loader:
+            imgs, masks = imgs.to(device), masks.to(device)
+            preds = model(imgs)
+
+            visualize_sample(imgs[0], masks[0], preds[0])
+
+            count -= 1
+            if count == 0:
+                break
+
+
+if __name__ == "__main__":
+    main()
+
