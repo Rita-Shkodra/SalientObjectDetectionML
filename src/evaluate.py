@@ -45,3 +45,29 @@ def visualize_sample(img, mask, pred):
     plt.subplot(1,4,3); plt.imshow(pred);  plt.title("Prediction"); plt.axis("off")
     plt.subplot(1,4,4); plt.imshow(overlay); plt.title("Overlay"); plt.axis("off")
     plt.show()
+
+def evaluate_model(model, test_loader, device):
+    model.eval()
+
+    total_metrics = [0,0,0,0]  
+    with torch.no_grad():
+        for imgs, masks in test_loader:
+            imgs, masks = imgs.to(device), masks.to(device)
+            preds = model(imgs)
+
+            precision, recall, f1, iou = compute_metrics(preds, masks)
+            total_metrics[0] += precision
+            total_metrics[1] += recall
+            total_metrics[2] += f1
+            total_metrics[3] += iou
+
+    batches = len(test_loader)
+    avg = [m / batches for m in total_metrics]
+
+    return {
+        "Precision": avg[0],
+        "Recall": avg[1],
+        "F1": avg[2],
+        "IoU": avg[3]
+    }
+
