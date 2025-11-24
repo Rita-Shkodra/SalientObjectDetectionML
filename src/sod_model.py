@@ -21,15 +21,23 @@ class SODModel(nn.Module):
           nn.MaxPool2d(2)
         )
         self.dec3 = nn.Sequential(
-            nn.ConvTranspose2d(128, 64, kernel_size=2, stride=2),
+            nn.ConvTranspose2d(128, 64, 2, stride=2),
+            nn.ReLU(inplace=True),
+            nn.Conv2d(64, 64, 3, padding=1),
             nn.ReLU(inplace=True)
         )
+
         self.dec2 = nn.Sequential(
-            nn.ConvTranspose2d(64, 32, kernel_size=2, stride=2),
+            nn.ConvTranspose2d(64, 32, 2, stride=2),
+            nn.ReLU(inplace=True),
+            nn.Conv2d(32, 32, 3, padding=1),
             nn.ReLU(inplace=True)
         )
+
         self.dec1 = nn.Sequential(
-            nn.ConvTranspose2d(32, 16, kernel_size=2, stride=2),
+            nn.ConvTranspose2d(32, 16, 2, stride=2),
+            nn.ReLU(inplace=True),
+            nn.Conv2d(16, 16, 3, padding=1),
             nn.ReLU(inplace=True)
         )
         
