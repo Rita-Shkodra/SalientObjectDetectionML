@@ -17,7 +17,8 @@ class SODDataset(Dataset):
         return len(self.images)
 
     def __getitem__(self, idx):
-        
+
+       
         img_path = os.path.join(self.img_dir, self.images[idx])
         img = cv2.imread(img_path)
         img = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
@@ -26,21 +27,24 @@ class SODDataset(Dataset):
 
         mask_path = os.path.join(self.mask_dir, self.masks[idx])
         mask = cv2.imread(mask_path, cv2.IMREAD_GRAYSCALE)
-        mask = cv2.resize(mask, (128, 128))
-        mask = mask.astype(np.float32) / 255.0
+        mask = cv2.resize(mask, (128, 128), interpolation=cv2.INTER_NEAREST)
+
+        mask = (mask.astype(np.float32) / 255.0)
+        mask = (mask > 0.5).astype(np.float32)  # ensure binary
         mask = np.expand_dims(mask, axis=0)
 
-      
+        
         if self.augment:
-           
+
             if random.random() > 0.5:
                 img = np.fliplr(img).copy()
                 mask = np.fliplr(mask).copy()
 
+            
             factor = random.uniform(0.8, 1.2)
             img = np.clip(img * factor, 0, 1)
 
-  
+        
         img = torch.from_numpy(img).permute(2, 0, 1)
         mask = torch.from_numpy(mask)
 
@@ -48,7 +52,7 @@ class SODDataset(Dataset):
 
 
 def get_dataloaders(train_dir, val_dir, test_dir, batch_size=16):
-  
+
     train_dataset = SODDataset(
         os.path.join(train_dir, "images"),
         os.path.join(train_dir, "masks"),
