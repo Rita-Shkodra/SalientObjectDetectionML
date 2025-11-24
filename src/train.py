@@ -78,3 +78,54 @@ def val_epoch(model, loader, device):
     avg_metrics = [m / num_batches for m in total_metrics]
 
     return total_loss / len(loader), avg_metrics
+
+
+def main():
+
+    device = "cuda" if torch.cuda.is_available() else "cpu"
+    print("Using:", device)
+
+   
+    train_loader, val_loader, _ = get_dataloaders(
+        "/content/drive/MyDrive/SOD_Data/processed/train",
+        "/content/drive/MyDrive/SOD_Data/processed/val",
+        "/content/drive/MyDrive/SOD_Data/processed/test",
+        batch_size=16
+    )
+
+
+    model = SODModel().to(device)
+    optimizer = optim.Adam(model.parameters(), lr=1e-3)
+
+    best_val_loss = float("inf")
+    save_path = "best_model.pth"
+
+    EPOCHS = 20
+
+    for epoch in range(1, EPOCHS + 1):
+        print(f"\n Epoch {epoch}/{EPOCHS}")
+
+        train_loss = train_epoch(model, train_loader, optimizer, device)
+        val_loss, metrics = val_epoch(model, val_loader, device)
+
+        precision, recall, f1, iou = metrics
+
+        print(f"\nEpoch {epoch} Summary:")
+        print(f" Train Loss: {train_loss:.4f}")
+        print(f" Val Loss:   {val_loss:.4f}")
+        print(f" Precision:  {precision:.4f}")
+        print(f" Recall:     {recall:.4f}")
+        print(f" F1-score:   {f1:.4f}")
+        print(f" IoU:        {iou:.4f}")
+
+        if val_loss < best_val_loss:
+            best_val_loss = val_loss
+            torch.save(model.state_dict(), save_path)
+            print(f"✔ Saved new best model to {save_path}")
+
+    print("\nTraining complete")
+
+
+if __name__ == "__main__":
+    main()
+
