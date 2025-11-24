@@ -32,3 +32,49 @@ def compute_metrics(pred, target):
     iou       = iou_loss(pred_bin, target)
 
     return precision.item(), recall.item(), f1.item(), iou.item()
+
+
+def train_epoch(model, loader, optimizer, device):
+    model.train()
+    total_loss = 0
+
+    for imgs, masks in tqdm(loader, desc="Training"):
+        imgs, masks = imgs.to(device), masks.to(device)
+
+        optimizer.zero_grad()
+        preds = model(imgs)
+
+        loss = combined_loss(preds, masks)
+        loss.backward()
+        optimizer.step()
+
+        total_loss += loss.item()
+
+    return total_loss / len(loader)
+
+
+
+def val_epoch(model, loader, device):
+    model.eval()
+    total_loss = 0
+    total_metrics = [0,0,0,0]  
+
+    with torch.no_grad():
+        for imgs, masks in tqdm(loader, desc="Validating"):
+            imgs, masks = imgs.to(device), masks.to(device)
+
+            preds = model(imgs)
+            loss = combined_loss(preds, masks)
+
+            total_loss += loss.item()
+
+            precision, recall, f1, iou = compute_metrics(preds, masks)
+            total_metrics[0] += precision
+            total_metrics[1] += recall
+            total_metrics[2] += f1
+            total_metrics[3] += iou
+
+    num_batches = len(loader)
+    avg_metrics = [m / num_batches for m in total_metrics]
+
+    return total_loss / len(loader), avg_metrics
