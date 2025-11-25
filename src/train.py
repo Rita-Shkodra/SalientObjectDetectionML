@@ -4,9 +4,10 @@ import torch.optim as optim
 from tqdm import tqdm
 import os
 from torch.utils.data import DataLoader
-from src.data_loader import get_dataloaders
-from src.sod_model import SODModel
+from data_loader import get_dataloaders
+from sod_model import SODModel
 import numpy as np
+bce_loss = nn.BCELoss()   
 def iou_loss(pred, target):
     pred = pred.view(-1)
     target = target.view(-1)

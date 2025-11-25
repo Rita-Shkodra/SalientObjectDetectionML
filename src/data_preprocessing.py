@@ -5,8 +5,8 @@ import random
 RAW_DIR = "/content/drive/MyDrive/SOD_Data/raw"
 PROCESSED_DIR = "/content/drive/MyDrive/SOD_Data/processed"
 
-TR_IMG_DIR = os.path.join(RAW_DIR, "DUTS-TR", "DUTS-TR-Image")
-TR_MASK_DIR = os.path.join(RAW_DIR, "DUTS-TR", "DUTS-TR-Mask")
+TR_IMG_DIR = os.path.join(RAW_DIR, "DUTS-TR", "DUTS-TR", "DUTS-TR-Image")
+TR_MASK_DIR = os.path.join(RAW_DIR, "DUTS-TR", "DUTS-TR", "DUTS-TR-Mask")
 
 for split in ["train", "val", "test"]:
     for kind in ["images", "masks"]:
