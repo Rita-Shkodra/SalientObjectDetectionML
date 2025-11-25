@@ -90,7 +90,10 @@ def main():
     )
 
     model = SODModel().to(device)
-    model.load_state_dict(torch.load("best_model.pth", map_location=device))
+    model.load_state_dict(
+    torch.load("/content/drive/MyDrive/SOD_Project/best_model.pth", map_location=device)
+)
+
     print("Loaded best_model.pth")
 
     results = evaluate_model(model, test_loader, device)
