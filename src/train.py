@@ -88,9 +88,10 @@ def main():
 
    
     train_loader, val_loader, _ = get_dataloaders(
-        "/content/drive/MyDrive/SOD_Data/processed/train",
-        "/content/drive/MyDrive/SOD_Data/processed/val",
-        "/content/drive/MyDrive/SOD_Data/processed/test",
+       "/content/SOD_Data/processed/train",
+      "/content/SOD_Data/processed/val",
+      "/content/SOD_Data/processed/test",
+
         batch_size=16
     )
 
