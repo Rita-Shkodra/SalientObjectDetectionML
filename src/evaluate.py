@@ -3,7 +3,8 @@ import matplotlib.pyplot as plt
 import numpy as np
 
 from data_loader import get_dataloaders
-from sod_model import SODModel
+#from sod_model import SODModel
+from sod_model_exp2 import SODModel
 
 
 def iou_score(pred, target):
@@ -91,6 +92,8 @@ def main():
 
     model = SODModel().to(device)
     model.load_state_dict(
+    #model.load_state_dict(torch.load("/content/drive/MyDrive/SOD_Project/best_model_exp2.pth", map_location=device))
+
     torch.load("/content/drive/MyDrive/SOD_Project/best_model.pth", map_location=device)
 )
 

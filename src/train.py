@@ -5,7 +5,7 @@ from tqdm import tqdm
 import os
 from torch.utils.data import DataLoader
 from data_loader import get_dataloaders
-from sod_model import SODModel
+from sod_model_exp2 import SODModel
 import numpy as np
 bce_loss = nn.BCELoss()   
 def iou_loss(pred, target):
