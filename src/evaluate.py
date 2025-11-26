@@ -3,8 +3,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 
 from data_loader import get_dataloaders
-#from sod_model import SODModel
-from sod_model_exp2 import SODModel
+from sod_model import SODModel
 
 
 def iou_score(pred, target):
@@ -18,13 +17,16 @@ def iou_score(pred, target):
 def compute_metrics(pred, target):
     pred_bin = (pred > 0.5).float()
     target = target.float()
+
     tp = (pred_bin * target).sum()
     fp = (pred_bin * (1 - target)).sum()
     fn = ((1 - pred_bin) * target).sum()
+
     precision = tp / (tp + fp + 1e-6)
     recall = tp / (tp + fn + 1e-6)
     f1 = 2 * precision * recall / (precision + recall + 1e-6)
     iou = iou_score(pred, target)
+
     return float(precision), float(recall), float(f1), float(iou)
 
 
@@ -32,15 +34,32 @@ def visualize_sample(img, mask, pred):
     img = img.permute(1, 2, 0).cpu().numpy()
     mask = mask.squeeze().cpu().numpy()
     pred = pred.squeeze().cpu().numpy()
+
     overlay = img.copy()
     overlay[:, :, 1] = np.maximum(overlay[:, :, 1], pred)
     overlay = np.clip(overlay, 0, 1)
 
     plt.figure(figsize=(10, 4))
-    plt.subplot(1, 4, 1); plt.imshow(img); plt.title("Input"); plt.axis("off")
-    plt.subplot(1, 4, 2); plt.imshow(mask); plt.title("Ground Truth"); plt.axis("off")
-    plt.subplot(1, 4, 3); plt.imshow(pred); plt.title("Prediction"); plt.axis("off")
-    plt.subplot(1, 4, 4); plt.imshow(overlay); plt.title("Overlay"); plt.axis("off")
+    plt.subplot(1, 4, 1)
+    plt.imshow(img)
+    plt.title("Input")
+    plt.axis("off")
+
+    plt.subplot(1, 4, 2)
+    plt.imshow(mask)
+    plt.title("Ground Truth")
+    plt.axis("off")
+
+    plt.subplot(1, 4, 3)
+    plt.imshow(pred)
+    plt.title("Prediction")
+    plt.axis("off")
+
+    plt.subplot(1, 4, 4)
+    plt.imshow(overlay)
+    plt.title("Overlay")
+    plt.axis("off")
+
     plt.show()
 
 
@@ -84,19 +103,14 @@ def main():
     print("Using:", device)
 
     _, _, test_loader = get_dataloaders(
-        "/content/drive/MyDrive/SOD_Data/processed/train",
-        "/content/drive/MyDrive/SOD_Data/processed/val",
-        "/content/drive/MyDrive/SOD_Data/processed/test",
-        batch_size=1
+        "/content/SOD_Data/processed/train",
+        "/content/SOD_Data/processed/val",
+        "/content/SOD_Data/processed/test",
+        batch_size=1,
     )
 
     model = SODModel().to(device)
-    model.load_state_dict(
-    #model.load_state_dict(torch.load("/content/drive/MyDrive/SOD_Project/best_model_exp2.pth", map_location=device))
-
-    torch.load("/content/drive/MyDrive/SOD_Project/best_model.pth", map_location=device)
-)
-
+    model.load_state_dict(torch.load("best_model.pth", map_location=device))
     print("Loaded best_model.pth")
 
     results = evaluate_model(model, test_loader, device)

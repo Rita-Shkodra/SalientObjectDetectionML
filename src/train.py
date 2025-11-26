@@ -3,22 +3,27 @@ import torch.nn as nn
 import torch.optim as optim
 from tqdm import tqdm
 import os
-from torch.utils.data import DataLoader
+
 from data_loader import get_dataloaders
-from sod_model_exp2 import SODModel
-import numpy as np
-bce_loss = nn.BCELoss()   
-def iou_loss(pred, target):
+from sod_model import SODModel
+
+
+bce_loss = nn.BCELoss()
+
+
+def iou_score(pred, target):
     pred = pred.view(-1)
     target = target.view(-1)
     intersection = (pred * target).sum()
     union = pred.sum() + target.sum() - intersection + 1e-6
     return intersection / union
 
+
 def combined_loss(pred, target):
     bce = bce_loss(pred, target)
-    iou = iou_loss(pred, target)
-    return bce + 0.5 * (1 - iou)
+    iou = iou_score(pred, target)
+    return bce + 0.5 * (1.0 - iou)
+
 
 def compute_metrics(pred, target):
     pred_bin = (pred > 0.5).float()
@@ -28,16 +33,16 @@ def compute_metrics(pred, target):
     fn = ((1 - pred_bin) * target).sum()
 
     precision = tp / (tp + fp + 1e-6)
-    recall    = tp / (tp + fn + 1e-6)
-    f1        = 2 * precision * recall / (precision + recall + 1e-6)
-    iou       = iou_loss(pred_bin, target)
+    recall = tp / (tp + fn + 1e-6)
+    f1 = 2 * precision * recall / (precision + recall + 1e-6)
+    iou = iou_score(pred_bin, target)
 
     return precision.item(), recall.item(), f1.item(), iou.item()
 
 
 def train_epoch(model, loader, optimizer, device):
     model.train()
-    total_loss = 0
+    total_loss = 0.0
 
     for imgs, masks in tqdm(loader, desc="Training"):
         imgs, masks = imgs.to(device), masks.to(device)
@@ -54,11 +59,10 @@ def train_epoch(model, loader, optimizer, device):
     return total_loss / len(loader)
 
 
-
 def val_epoch(model, loader, device):
     model.eval()
-    total_loss = 0
-    total_metrics = [0,0,0,0]  
+    total_loss = 0.0
+    total_metrics = [0.0, 0.0, 0.0, 0.0]
 
     with torch.no_grad():
         for imgs, masks in tqdm(loader, desc="Validating"):
@@ -81,31 +85,58 @@ def val_epoch(model, loader, device):
     return total_loss / len(loader), avg_metrics
 
 
-def main():
+def save_checkpoint(epoch, model, optimizer, scheduler, path):
+    torch.save({
+        "epoch": epoch,
+        "model_state": model.state_dict(),
+        "optimizer_state": optimizer.state_dict(),
+        "scheduler_state": scheduler.state_dict()
+    }, path)
+    print(f"Checkpoint saved at {path}")
 
+
+def load_checkpoint(path, model, optimizer, scheduler, device):
+    ckpt = torch.load(path, map_location=device)
+    model.load_state_dict(ckpt["model_state"])
+    optimizer.load_state_dict(ckpt["optimizer_state"])
+    scheduler.load_state_dict(ckpt["scheduler_state"])
+    start_epoch = ckpt["epoch"] + 1
+    print(f"Resume training from epoch {start_epoch}")
+    return start_epoch
+
+
+def main():
     device = "cuda" if torch.cuda.is_available() else "cpu"
     print("Using:", device)
 
-   
     train_loader, val_loader, _ = get_dataloaders(
-       "/content/SOD_Data/processed/train",
-      "/content/SOD_Data/processed/val",
-      "/content/SOD_Data/processed/test",
-
-        batch_size=16
+        "/content/SOD_Data/processed/train",
+        "/content/SOD_Data/processed/val",
+        "/content/SOD_Data/processed/test",
+        batch_size=16,
     )
-
 
     model = SODModel().to(device)
     optimizer = optim.Adam(model.parameters(), lr=1e-3)
+    scheduler = optim.lr_scheduler.ReduceLROnPlateau(
+        optimizer,
+        mode="min",
+        factor=0.5,
+        patience=3
+    )
 
     best_val_loss = float("inf")
-    save_path = "best_model.pth"
+    checkpoint_path = "checkpoint.pth"
+    best_model_path = "best_model.pth"
 
-    EPOCHS = 20
+    start_epoch = 1
+    EPOCHS = 25
 
-    for epoch in range(1, EPOCHS + 1):
-        print(f"\n Epoch {epoch}/{EPOCHS}")
+    if os.path.exists(checkpoint_path):
+        start_epoch = load_checkpoint(checkpoint_path, model, optimizer, scheduler, device)
+
+    for epoch in range(start_epoch, EPOCHS + 1):
+        print(f"\nEpoch {epoch}/{EPOCHS}")
 
         train_loss = train_epoch(model, train_loader, optimizer, device)
         val_loss, metrics = val_epoch(model, val_loader, device)
@@ -120,14 +151,17 @@ def main():
         print(f" F1-score:   {f1:.4f}")
         print(f" IoU:        {iou:.4f}")
 
+        scheduler.step(val_loss)
+
+        save_checkpoint(epoch, model, optimizer, scheduler, checkpoint_path)
+
         if val_loss < best_val_loss:
             best_val_loss = val_loss
-            torch.save(model.state_dict(), save_path)
-            print(f"✔ Saved new best model to {save_path}")
+            torch.save(model.state_dict(), best_model_path)
+            print(f"New best model saved at {best_model_path}")
 
     print("\nTraining complete")
 
 
 if __name__ == "__main__":
     main()
-

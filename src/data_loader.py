@@ -6,6 +6,7 @@ import torch
 from torch.utils.data import Dataset, DataLoader
 import random
 
+
 class SODDataset(Dataset):
     def __init__(self, img_dir, mask_dir, augment=False):
         self.img_dir = img_dir
@@ -27,6 +28,22 @@ class SODDataset(Dataset):
         except:
             return None
 
+    def random_brightness_contrast(self, img):
+        alpha = random.uniform(0.8, 1.2)
+        beta = random.uniform(-0.1, 0.1)
+        mean = img.mean(axis=(0, 1), keepdims=True)
+        img = (img - mean) * alpha + mean + beta
+        img = np.clip(img, 0.0, 1.0)
+        return img
+
+    def random_blur(self, img):
+        if random.random() < 0.5:
+            k = random.choice([3, 5])
+            img_uint8 = (img * 255.0).astype(np.uint8)
+            img_uint8 = cv2.GaussianBlur(img_uint8, (k, k), 0)
+            img = img_uint8.astype(np.float32) / 255.0
+        return img
+
     def __getitem__(self, idx):
         img_name = self.images[idx]
         mask_name = self.masks[idx]
@@ -42,20 +59,24 @@ class SODDataset(Dataset):
             new_idx = (idx + 1) % len(self)
             return self.__getitem__(new_idx)
 
-        img = cv2.resize(img, (128, 128))
-        mask = cv2.resize(mask, (128, 128), interpolation=cv2.INTER_NEAREST)
+        img = cv2.resize(img, (224, 224))
+        mask = cv2.resize(mask, (224, 224), interpolation=cv2.INTER_NEAREST)
 
         img = img.astype(np.float32) / 255.0
         mask = mask.astype(np.float32) / 255.0
 
-        mask = np.expand_dims(mask, axis=0)
-
         if self.augment:
-            if random.random() > 0.5:
+            if random.random() < 0.5:
                 img = np.fliplr(img).copy()
                 mask = np.fliplr(mask).copy()
-            factor = random.uniform(0.8, 1.2)
-            img = np.clip(img * factor, 0, 1)
+
+            if random.random() < 0.5:
+                img = self.random_brightness_contrast(img)
+
+            if random.random() < 0.3:
+                img = self.random_blur(img)
+
+        mask = np.expand_dims(mask, axis=0)
 
         img = torch.from_numpy(img).permute(2, 0, 1)
         mask = torch.from_numpy(mask)
